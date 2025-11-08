@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using StickyNotesApp.Models;
@@ -20,6 +21,11 @@ namespace StickyNotesApp.ViewModels
     /// </summary>
     public class MainViewModel : INotifyPropertyChanged
     {
+        private const double DefaultNoteWidth = 320;
+        private const double DefaultNoteHeight = 280;
+        private const double MinNoteWidth = 260;
+        private const double MinNoteHeight = 150;
+
         private readonly ObservableCollection<NoteViewModel> _notes = new();
         private readonly ICollectionView _notesView;
         private readonly NoteStorageService _storage;
@@ -42,13 +48,16 @@ namespace StickyNotesApp.ViewModels
             {
                 foreach (var note in initialNotes)
                 {
+                    EnsureNoteBounds(note);
                     AddNoteInternal(note, select: false);
                 }
             }
 
             if (_notes.Count == 0)
             {
-                AddNoteInternal(new Note(), select: true);
+                var newNote = new Note();
+                InitializeNewNote(newNote);
+                AddNoteInternal(newNote, select: true);
             }
 
             _suppressAutoSave = false;
@@ -94,7 +103,9 @@ namespace StickyNotesApp.ViewModels
 
         private void AddNote()
         {
-            var vm = AddNoteInternal(new Note(), select: true);
+            var note = new Note();
+            InitializeNewNote(note);
+            var vm = AddNoteInternal(note, select: true);
             SelectedNote = vm;
             TriggerAutoSave();
         }
@@ -117,6 +128,7 @@ namespace StickyNotesApp.ViewModels
 
         private NoteViewModel AddNoteInternal(Note note, bool select)
         {
+            EnsureNoteBounds(note);
             var vm = new NoteViewModel(note);
             vm.PropertyChanged += NoteViewModelOnPropertyChanged;
             _notes.Add(vm);
@@ -190,6 +202,73 @@ namespace StickyNotesApp.ViewModels
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private static void InitializeNewNote(Note note)
+        {
+            note.Width = Math.Max(DefaultNoteWidth, MinNoteWidth);
+            note.Height = Math.Max(DefaultNoteHeight, MinNoteHeight);
+            PositionNoteRightOfCenter(note);
+        }
+
+        private static void EnsureNoteBounds(Note note)
+        {
+            if (note.Width <= 0)
+            {
+                note.Width = DefaultNoteWidth;
+            }
+            note.Width = Math.Max(note.Width, MinNoteWidth);
+
+            if (note.Height <= 0)
+            {
+                note.Height = DefaultNoteHeight;
+            }
+            note.Height = Math.Max(note.Height, MinNoteHeight);
+
+            if (double.IsNaN(note.Left) || double.IsNaN(note.Top))
+            {
+                PositionNoteRightOfCenter(note);
+            }
+            else
+            {
+                var workArea = SystemParameters.WorkArea;
+                var maxLeft = Math.Max(workArea.Left, workArea.Right - note.Width);
+                var maxTop = Math.Max(workArea.Top, workArea.Bottom - note.Height);
+                note.Left = Clamp(note.Left, workArea.Left, maxLeft);
+                note.Top = Clamp(note.Top, workArea.Top, maxTop);
+            }
+        }
+
+        private static void PositionNoteRightOfCenter(Note note)
+        {
+            var workArea = SystemParameters.WorkArea;
+            var targetLeft = workArea.Left + (workArea.Width * 0.65) - (note.Width / 2);
+            var targetTop = workArea.Top + (workArea.Height - note.Height) / 2;
+            var maxLeft = Math.Max(workArea.Left, workArea.Right - note.Width);
+            var maxTop = Math.Max(workArea.Top, workArea.Bottom - note.Height);
+
+            note.Left = Clamp(targetLeft, workArea.Left, maxLeft);
+            note.Top = Clamp(targetTop, workArea.Top, maxTop);
+        }
+
+        private static double Clamp(double value, double min, double max)
+        {
+            if (double.IsNaN(value))
+            {
+                return min;
+            }
+
+            if (value < min)
+            {
+                return min;
+            }
+
+            if (value > max)
+            {
+                return max;
+            }
+
+            return value;
         }
     }
 }

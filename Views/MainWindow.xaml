@@ -8,6 +8,8 @@
         Title="Sticky Notes"
         Height="640"
         Width="900"
+        MinWidth="600"
+        MinHeight="420"
         Background="#111111"
         Foreground="White"
         WindowStartupLocation="CenterScreen">

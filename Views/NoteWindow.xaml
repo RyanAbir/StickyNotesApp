@@ -11,6 +11,8 @@
         ResizeMode="CanResizeWithGrip"
         Background="Transparent"
         Topmost="{Binding IsPinned}"
+        MinWidth="300"
+        MinHeight="150"
         WindowStartupLocation="Manual"
         Loaded="Window_Loaded"
         Deactivated="Window_Deactivated"

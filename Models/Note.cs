@@ -35,7 +35,7 @@ namespace StickyNotesApp.Models
         public double Width { get; set; } = 320;
 
         /// <summary>Gets or sets the height of the note window.</summary>
-        public double Height { get; set; } = 260;
+        public double Height { get; set; } = 280;
 
         /// <summary>Gets or sets the total duration for the focus timer.</summary>
         public TimeSpan Duration { get; set; } = TimeSpan.Zero;
